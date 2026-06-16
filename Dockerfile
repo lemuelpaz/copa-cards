@@ -31,9 +31,9 @@ RUN npx prisma generate
 
 # Next.js não conecta ao banco durante o build (todas as páginas são client-side)
 # DATABASE_URL é exigida apenas em runtime pelas API routes
+# NODE_ENV=production NÃO deve ser setado aqui — causaria pre-render das API routes
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
 
 RUN npm run build
 
