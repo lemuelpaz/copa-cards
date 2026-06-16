@@ -16,12 +16,100 @@ const packGradients: Record<string, { bg: string; glow: string }> = {
   "t-legendary": { bg: "linear-gradient(155deg,#b44fff,#3a0068)", glow: "rgba(180,0,255,.6)"   },
 };
 
+const RARITY_FLASH: Record<string, string> = {
+  legendary: "rgba(255,215,0,.35)",
+  epic:      "rgba(180,0,255,.28)",
+  rare:      "rgba(33,150,243,.22)",
+  common:    "rgba(255,255,255,.10)",
+};
+
 const CARD_W = 130;
 const CARD_H = 183;
 const GAP    = 12;
-const STEP   = CARD_W + GAP; // 142px per slot
-const WIN_IDX        = 23;
-const SPIN_DURATION  = 4200;
+const STEP   = CARD_W + GAP;
+const WIN_IDX       = 23;
+const SPIN_DURATION = 4200;
+
+// ── Web Audio helpers ──────────────────────────────────────────────
+
+function playTick(ctx: AudioContext, t: number, vol = 0.14, pitch = 1) {
+  const osc  = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.value = 580 * pitch;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.055);
+  osc.start(t);
+  osc.stop(t + 0.06);
+}
+
+function scheduleSpinTicks(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  // Tick times (seconds): slow start → fast middle → deceleration
+  const times = [
+    0.14, 0.31, 0.50, 0.69, 0.88,        // arranque lento
+    1.03, 1.17, 1.30, 1.42, 1.53,        // acelerando
+    1.63, 1.73, 1.83, 1.93, 2.03,        // máxima velocidade
+    2.14, 2.26, 2.39,                     // começando a frear
+    2.55, 2.74, 2.97,                     // desacelerando
+    3.28, 3.68, 4.05,                     // quase parando
+  ];
+  times.forEach((t, i) => {
+    const prog  = i / (times.length - 1);
+    const vol   = 0.09 + Math.sin(prog * Math.PI) * 0.11; // mais alto no meio
+    const pitch = 0.78 + Math.sin(prog * Math.PI) * 0.44; // tom sobe e desce
+    playTick(ctx, now + t, vol, pitch);
+  });
+}
+
+function playResultSound(ctx: AudioContext, rarity: string) {
+  const now = ctx.currentTime;
+
+  function tone(freq: number, t: number, dur: number, vol: number, type: OscillatorType = "sine") {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur + 0.01);
+  }
+
+  if (rarity === "legendary") {
+    // Fanfarra ascendente
+    [[523, 0], [659, 0.05], [784, 0.13], [1047, 0.24], [784, 0.38], [1047, 0.50]].forEach(([f, d]) =>
+      tone(f, now + d, 0.75, 0.18)
+    );
+    tone(2093, now + 0.52, 0.5, 0.07); // shimmer agudo
+  } else if (rarity === "epic") {
+    // Varredura mágica ascendente
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(860, now + 0.42);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+    osc.start(now);
+    osc.stop(now + 0.53);
+    tone(680, now + 0.22, 0.4, 0.1);
+  } else if (rarity === "rare") {
+    // Dois tons ascendentes
+    tone(622, now,       0.38, 0.14);
+    tone(831, now + 0.16, 0.44, 0.14);
+  } else {
+    // Ding simples
+    tone(523, now, 0.32, 0.12);
+  }
+}
+// ──────────────────────────────────────────────────────────────────
 
 export default function PackOpenModal({ pack, onClose, onResult }: Props) {
   const [step,       setStep]       = useState<"pre" | "spinning" | "done">("pre");
@@ -30,10 +118,21 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
   const [error,      setError]      = useState("");
   const [translateX, setTranslateX] = useState(0);
   const [spinning,   setSpinning]   = useState(false);
+  const [spinBlur,   setSpinBlur]   = useState(0);
+  const [flashColor, setFlashColor] = useState<string | null>(null);
 
   const containerRef  = useRef<HTMLDivElement>(null);
   const winnerCardRef = useRef<HTMLDivElement>(null);
   const spinFiredRef  = useRef(false);
+  const audioCtxRef   = useRef<AudioContext | null>(null);
+
+  function ensureAudio(): AudioContext | null {
+    if (typeof window === "undefined") return null;
+    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioCtxRef.current;
+  }
 
   function handleReset() {
     setStep("pre");
@@ -41,6 +140,8 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
     setError("");
     setTranslateX(0);
     setSpinning(false);
+    setSpinBlur(0);
+    setFlashColor(null);
     spinFiredRef.current = false;
   }
 
@@ -51,6 +152,8 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
       setError("");
       setTranslateX(0);
       setSpinning(false);
+      setSpinBlur(0);
+      setFlashColor(null);
       spinFiredRef.current = false;
     }
   }, [pack]);
@@ -60,23 +163,30 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Roulette spin logic
+  // Roulette spin logic + ticks
   useEffect(() => {
     if (step !== "spinning" || !result || spinFiredRef.current) return;
     spinFiredRef.current = true;
 
     const w = containerRef.current?.clientWidth ?? 360;
-    // Place card 0 at center initially (no transition)
     setTranslateX(w / 2 - CARD_W / 2);
     setSpinning(false);
+    setSpinBlur(0);
 
-    // One frame later, fire the spin with transition
     const t1 = setTimeout(() => {
       const finalX = w / 2 - (WIN_IDX * STEP + CARD_W / 2);
       setSpinning(true);
+      setSpinBlur(3); // blur durante giro rápido
       setTranslateX(finalX);
 
-      // After spin ends, show result
+      // Som de roleta
+      const ctx = audioCtxRef.current;
+      if (ctx) scheduleSpinTicks(ctx);
+
+      // Remove blur conforme desacelera
+      setTimeout(() => setSpinBlur(0), 2700);
+
+      // Revelação
       setTimeout(() => {
         setStep("done");
         onResult(result.newBalance);
@@ -86,10 +196,19 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
     return () => clearTimeout(t1);
   }, [step, result]);
 
-  // Particles when winner is revealed
+  // Partículas + som + flash na revelação
   useEffect(() => {
     if (step === "done" && result) {
-      setTimeout(() => spawnParticles(winnerCardRef.current, result.card.rarity), 120);
+      const ctx = audioCtxRef.current;
+
+      setTimeout(() => {
+        spawnParticles(winnerCardRef.current, result.card.rarity);
+        if (ctx) playResultSound(ctx, result.card.rarity);
+      }, 120);
+
+      // Flash de cor conforme raridade
+      setFlashColor(RARITY_FLASH[result.card.rarity] ?? RARITY_FLASH.common);
+      setTimeout(() => setFlashColor(null), 450);
     }
   }, [step]);
 
@@ -100,6 +219,11 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
     if (loading) return;
     setLoading(true);
     setError("");
+
+    // Inicializa/resume AudioContext no gesto do usuário
+    const ctx = ensureAudio();
+    if (ctx?.state === "suspended") await ctx.resume();
+
     try {
       const res  = await fetch("/api/packs/open", {
         method: "POST",
@@ -127,11 +251,11 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
     const palette = palettes[rarity] ?? palettes.common;
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-    const count = rarity === "legendary" ? 45 : rarity === "epic" ? 32 : rarity === "rare" ? 22 : 12;
+    const count = rarity === "legendary" ? 50 : rarity === "epic" ? 35 : rarity === "rare" ? 24 : 14;
     for (let i = 0; i < count; i++) {
       const p     = document.createElement("div");
       const angle = Math.random() * Math.PI * 2;
-      const dist  = 90 + Math.random() * 170;
+      const dist  = 90 + Math.random() * 180;
       const size  = 5 + Math.random() * 8;
       const color = palette[Math.floor(Math.random() * palette.length)];
       p.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;
@@ -181,6 +305,14 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
       display: "flex", flexDirection: "column",
       overflowY: "auto",
     }}>
+      {/* Flash de revelação */}
+      {flashColor && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 900, pointerEvents: "none",
+          background: flashColor,
+          animation: "flashReveal 0.45s ease-out forwards",
+        }} />
+      )}
 
       {/* ── PRE-OPEN ── */}
       {step === "pre" && (
@@ -250,6 +382,7 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
               fontSize: 14, letterSpacing: 5,
               color: "rgba(255,255,255,.35)",
               textTransform: "uppercase",
+              animation: "glowPulse 0.6s ease-in-out infinite",
             }}>
               Sorteando sua figurinha...
             </p>
@@ -264,7 +397,7 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
                 overflow: "hidden",
               }}
             >
-              {/* Top selector arrow */}
+              {/* Seta superior */}
               <div style={{
                 position: "absolute", left: "50%", top: 0,
                 transform: "translateX(-50%)",
@@ -273,9 +406,9 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
                 borderRight: "10px solid transparent",
                 borderTop: "14px solid #00e676",
                 zIndex: 5,
-                filter: "drop-shadow(0 0 6px #00e676)",
+                filter: "drop-shadow(0 0 8px #00e676)",
               }} />
-              {/* Bottom selector arrow */}
+              {/* Seta inferior */}
               <div style={{
                 position: "absolute", left: "50%", bottom: 0,
                 transform: "translateX(-50%)",
@@ -284,18 +417,17 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
                 borderRight: "10px solid transparent",
                 borderBottom: "14px solid #00e676",
                 zIndex: 5,
-                filter: "drop-shadow(0 0 6px #00e676)",
+                filter: "drop-shadow(0 0 8px #00e676)",
               }} />
-              {/* Center selection line */}
-              <div style={{
+              {/* Linha central com glow pulsante */}
+              <div className="spin-center-line" style={{
                 position: "absolute", left: "50%", top: 0, bottom: 0,
                 width: 2, background: "#00e676",
                 transform: "translateX(-50%)",
                 zIndex: 4,
-                boxShadow: "0 0 10px #00e676, 0 0 22px rgba(0,230,118,0.4)",
               }} />
 
-              {/* Scrolling card strip */}
+              {/* Strip de cards com blur durante giro rápido */}
               <div style={{
                 display: "flex",
                 gap: GAP,
@@ -307,6 +439,9 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
                   ? `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.8, 0.32, 1)`
                   : "none",
                 willChange: "transform",
+                filter: `blur(${spinBlur}px)`,
+                // transição suave do blur saindo
+                ...(spinBlur === 0 ? { transition: `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.8, 0.32, 1), filter 1.2s ease` } : {}),
               }}>
                 {result.strip.map((card, i) => (
                   <div key={i} style={{ flexShrink: 0 }}>
@@ -315,7 +450,7 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
                 ))}
               </div>
 
-              {/* Edge fade overlays */}
+              {/* Fade nas bordas */}
               <div style={{
                 position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3,
                 background: "linear-gradient(to right, rgba(4,8,4,1) 0%, transparent 20%, transparent 80%, rgba(4,8,4,1) 100%)",
@@ -335,7 +470,6 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
             padding: "28px 16px 40px", minHeight: "calc(100dvh - 69px)",
           }}>
 
-            {/* Winner card */}
             <div
               ref={winnerCardRef}
               style={{
@@ -350,7 +484,6 @@ export default function PackOpenModal({ pack, onClose, onResult }: Props) {
               <PlayerCard card={result.card} flipped={true} size="md" />
             </div>
 
-            {/* Result summary */}
             <div style={{
               width: "100%", maxWidth: 400,
               background: "rgba(255,255,255,.04)",

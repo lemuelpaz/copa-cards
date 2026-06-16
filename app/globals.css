@@ -61,6 +61,21 @@ body::before {
 @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
 
+@keyframes flashReveal {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes spinCenterGlow {
+  0%,100% { box-shadow: 0 0 8px #00e676, 0 0 18px rgba(0,230,118,.35); }
+  50%     { box-shadow: 0 0 22px #00e676, 0 0 44px rgba(0,230,118,.75); }
+}
+
+.spin-center-line {
+  box-shadow: 0 0 10px #00e676, 0 0 22px rgba(0,230,118,.4);
+  animation: spinCenterGlow 0.35s ease-in-out infinite;
+}
+
 .animate-float   { animation: floatY 5s ease-in-out infinite; }
 .animate-glow    { animation: glowPulse 2s ease-in-out infinite; }
 .animate-slide-up{ animation: slideUp .4s ease forwards; }
