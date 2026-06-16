@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminSidebar from "@/components/admin/AdminSidebar";
 
 const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
 
@@ -91,9 +90,7 @@ export default function AdminAffiliatesPage() {
   };
 
   return (
-    <div style={{ display:"flex", minHeight:"100vh", background:"#060e06" }}>
-      <AdminSidebar />
-      <main style={{ flex:1, padding:"32px", overflowX:"auto" }}>
+    <main style={{ padding:"32px", overflowX:"auto" }}>
 
         {/* Header */}
         <div style={{ marginBottom:24 }}>
@@ -287,8 +284,7 @@ export default function AdminAffiliatesPage() {
             </table>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }
 
