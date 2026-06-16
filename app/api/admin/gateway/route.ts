@@ -9,7 +9,7 @@ export async function GET() {
   const session = await getSession();
   if (!session || session.role !== "admin") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 
-  const keys = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_environment","veopag_base_url"];
+  const keys = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_base_url"];
   const result: Record<string,string> = {};
   for (const k of keys) result[k] = await getConfig(k);
   return NextResponse.json({ config: result });
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (!session || session.role !== "admin") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 
   const body = await req.json();
-  const allowed = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_environment","veopag_base_url"];
+  const allowed = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_base_url"];
   for (const key of allowed) {
     if (body[key] !== undefined) await setConfig(key, String(body[key]));
   }
@@ -40,7 +40,7 @@ export async function PUT() {
   if (!clientId || !clientSecret) return NextResponse.json({ error: "Credenciais não configuradas" }, { status: 400 });
 
   try {
-    const res = await fetch(`${baseUrl}/v1/auth/token`, {
+    const res = await fetch(`${baseUrl}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),

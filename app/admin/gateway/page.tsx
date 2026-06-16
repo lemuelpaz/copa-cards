@@ -6,12 +6,11 @@ interface GatewayConfig {
   veopag_client_id: string;
   veopag_client_secret: string;
   veopag_webhook_secret: string;
-  veopag_environment: string;
   veopag_base_url: string;
 }
 
 export default function AdminGateway() {
-  const [cfg,     setCfg]     = useState<GatewayConfig>({ veopag_client_id:"", veopag_client_secret:"", veopag_webhook_secret:"", veopag_environment:"sandbox", veopag_base_url:"https://api.veopag.com.br" });
+  const [cfg,     setCfg]     = useState<GatewayConfig>({ veopag_client_id:"", veopag_client_secret:"", veopag_webhook_secret:"", veopag_base_url:"https://api.veopag.com" });
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [msg,     setMsg]     = useState("");
@@ -67,33 +66,17 @@ export default function AdminGateway() {
         </a>
       </div>
 
-      {/* environment toggle */}
-      <div style={{ display:"flex", gap:8, marginBottom:28, marginTop:24 }}>
-        {["sandbox","production"].map(env => (
-          <button key={env} onClick={()=>setCfg(c=>({...c, veopag_environment:env,
-            veopag_base_url: env==="sandbox"?"https://sandbox.api.veopag.com.br":"https://api.veopag.com.br"}))}
-            style={{ padding:"9px 24px", borderRadius:20, cursor:"pointer", fontSize:13, fontWeight:600,
-              border: cfg.veopag_environment===env?"1px solid rgba(0,230,118,.5)":"1px solid rgba(255,255,255,.1)",
-              background: cfg.veopag_environment===env ? (env==="production"?"rgba(0,230,118,.15)":"rgba(255,215,0,.1)") : "transparent",
-              color: cfg.veopag_environment===env ? (env==="production"?"#00e676":"#ffd700") : "rgba(255,255,255,.4)",
-              textTransform:"capitalize" }}>
-            {env === "sandbox" ? "🧪 Sandbox" : "🚀 Produção"}
-          </button>
-        ))}
-      </div>
-
-      {cfg.veopag_environment === "production" && (
-        <div style={{ background:"rgba(255,82,82,.1)", border:"1px solid rgba(255,82,82,.3)", borderRadius:12,
-          padding:"12px 16px", marginBottom:20, display:"flex", gap:10, alignItems:"flex-start" }}>
-          <span style={{ fontSize:18 }}>⚠️</span>
-          <div>
-            <div style={{ fontSize:13, fontWeight:600, color:"#ff5252" }}>Ambiente de Produção</div>
-            <div style={{ fontSize:12, color:"rgba(255,82,82,.7)" }}>
-              Transações reais serão processadas. Certifique-se de que as credenciais estão corretas.
-            </div>
+      <div style={{ background:"rgba(255,193,7,.08)", border:"1px solid rgba(255,193,7,.25)", borderRadius:12,
+        padding:"12px 16px", marginBottom:28, marginTop:24, display:"flex", gap:10, alignItems:"flex-start" }}>
+        <span style={{ fontSize:18 }}>ℹ️</span>
+        <div>
+          <div style={{ fontSize:13, fontWeight:600, color:"#ffc107" }}>Apenas Produção</div>
+          <div style={{ fontSize:12, color:"rgba(255,193,7,.7)" }}>
+            VeoPag não possui ambiente sandbox — todas as transações são reais.
+            URL base: <code style={{ color:"#ffc107" }}>https://api.veopag.com</code>
           </div>
         </div>
-      )}
+      </div>
 
       <form onSubmit={handleSave} style={{ background:"#0b130b", border:"1px solid rgba(0,230,118,.12)",
         borderRadius:20, padding:"28px 24px" }}>

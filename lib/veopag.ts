@@ -3,9 +3,9 @@ import { getConfig } from "./utils";
 async function getGatewayConfig() {
   const clientId     = await getConfig("veopag_client_id");
   const clientSecret = await getConfig("veopag_client_secret");
-  const baseUrl      = await getConfig("veopag_base_url");
+  const baseUrl      = (await getConfig("veopag_base_url")) || "https://api.veopag.com";
 
-  if (!clientId || !clientSecret || !baseUrl)
+  if (!clientId || !clientSecret)
     throw new Error("Gateway de pagamento não configurado. Acesse Admin → Gateway.");
 
   try { new URL(baseUrl); } catch {
@@ -20,7 +20,7 @@ async function getAccessToken(): Promise<{ token: string; baseUrl: string }> {
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}/v1/auth/token`, {
+    res = await fetch(`${baseUrl}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
@@ -28,67 +28,90 @@ async function getAccessToken(): Promise<{ token: string; baseUrl: string }> {
   } catch (e: any) {
     const code = e?.cause?.code ?? e?.code ?? e?.message ?? "network error";
     const hint =
-      code === "ENOTFOUND"    ? "DNS não resolveu — verifique a URL base em Admin → Gateway." :
-      code === "ECONNREFUSED" ? "Conexão recusada pelo servidor." :
-      code === "CERT_HAS_EXPIRED" ? "Certificado SSL expirado no servidor." : "";
-    throw new Error(`Não foi possível conectar ao gateway (${baseUrl}). Código: ${code}. ${hint}`.trim());
+      code === "ENOTFOUND"    ? " (DNS não resolveu — verifique a URL em Admin → Gateway)" :
+      code === "ECONNREFUSED" ? " (conexão recusada pelo servidor)" : "";
+    throw new Error(`Não foi possível conectar ao gateway (${baseUrl}): ${code}${hint}`);
   }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? body.error ?? `Autenticação no gateway falhou (${res.status})`);
+    throw new Error(body.message ?? body.error ?? `Autenticação falhou (HTTP ${res.status})`);
   }
 
-  const data = await res.json();
-  return { token: data.access_token, baseUrl };
+  const data  = await res.json();
+  const token = data.token ?? data.access_token;
+  if (!token) throw new Error("Gateway não retornou token de autenticação.");
+
+  return { token, baseUrl };
 }
 
 export interface PixCharge {
   txid:          string;
-  qrcode:        string;  // EMV string (PIX Copia e Cola)
-  qrcodeBase64?: string;  // base64 PNG
-  qrcodeUrl?:    string;  // hosted image URL
+  qrcode:        string;
+  qrcodeBase64?: string;
+  qrcodeUrl?:    string;
   expiresAt:     string;
 }
 
 export async function createPixCharge(params: {
-  amount:      number;
+  amount:      number;  // em reais (BRL)
   externalId:  string;
   description: string;
+  payer?: {
+    document?: string;  // CPF (11 dígitos) ou CNPJ (14 dígitos)
+    name?:     string;
+    email?:    string;
+  };
+  callbackUrl?: string;
 }): Promise<PixCharge> {
   const { token, baseUrl } = await getAccessToken();
 
+  const siteUrl = await getConfig("site_url");
+
+  const body: Record<string, unknown> = {
+    amount:      Math.round(params.amount * 100), // centavos
+    external_id: params.externalId,
+  };
+
+  if (params.payer) {
+    const doc = params.payer.document?.replace(/\D/g, "");
+    body.payer = {
+      ...(doc ? { document: doc } : {}),
+      name:  params.payer.name  ?? "Usuário",
+      email: params.payer.email ?? `deposito_${params.externalId}@copa.cards`,
+    };
+  }
+
+  const cbUrl = params.callbackUrl ?? (siteUrl ? `${siteUrl}/api/webhooks/veopag` : undefined);
+  if (cbUrl) body.clientCallbackUrl = cbUrl;
+
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}/v1/pix/cobrancas`, {
+    res = await fetch(`${baseUrl}/api/transactions/deposit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization:  `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        valor:       params.amount,
-        descricao:   params.description,
-        external_id: params.externalId,
-        expiracao:   3600,
-      }),
+      body: JSON.stringify(body),
     });
   } catch (e: any) {
-    throw new Error(`Erro ao criar cobrança PIX. (${e?.message ?? "network error"})`);
+    throw new Error(`Erro de rede ao criar cobrança PIX: ${e?.message ?? "network error"}`);
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? err.error ?? `Erro ao criar cobrança PIX (${res.status})`);
+    throw new Error(err.message ?? err.error ?? `Erro ao criar cobrança (HTTP ${res.status})`);
   }
 
   const d = await res.json();
   return {
-    txid:         d.id            ?? d.txid         ?? d.e2eId,
-    qrcode:       d.qrcode        ?? d.emv          ?? d.payload   ?? d.qr_code,
+    txid:        d.transaction_id ?? d.txid ?? d.id ?? params.externalId,
+    qrcode:      d.qrcode         ?? d.emv  ?? d.payload ?? d.qr_code ?? "",
     qrcodeBase64: d.qrcode_image  ?? d.qrcode_base64 ?? d.image_base64,
     qrcodeUrl:    d.qrcode_url    ?? d.image_url,
-    expiresAt:    d.expires_at    ?? d.expiracao     ?? d.expiresAt,
+    expiresAt:    d.expires_at    ?? d.expiracao ?? d.expiresAt
+                    ?? new Date(Date.now() + 3_600_000).toISOString(),
   };
 }
 
@@ -97,7 +120,7 @@ export async function verifyWebhookSignature(
   signature: string,
 ): Promise<boolean> {
   const secret = await getConfig("veopag_webhook_secret");
-  if (!secret) return true; // sem secret → aceita (dev mode)
+  if (!secret) return true;
 
   try {
     const enc = new TextEncoder();
@@ -108,7 +131,6 @@ export async function verifyWebhookSignature(
     );
     const sig      = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
     const expected = Buffer.from(sig).toString("hex");
-    // aceita "hex" ou "sha256=hex" (formato GitHub-style)
     return signature === expected || signature === `sha256=${expected}`;
   } catch {
     return false;

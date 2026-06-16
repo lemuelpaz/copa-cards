@@ -25,11 +25,17 @@ export async function POST(req: NextRequest) {
     data: { userId: session.userId, amount, status: "pending" },
   });
 
+  const user = await db.user.findUnique({
+    where:  { id: session.userId },
+    select: { name: true },
+  });
+
   try {
     const charge = await createPixCharge({
       amount,
       externalId:  deposit.id,
       description: `Depósito Copa 2026 — R$ ${amount.toFixed(2)}`,
+      payer: { name: user?.name ?? "Usuário" },
     });
 
     const updated = await db.deposit.update({
