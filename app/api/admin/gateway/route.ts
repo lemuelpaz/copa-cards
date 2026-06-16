@@ -46,8 +46,14 @@ export async function PUT() {
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
     });
     if (res.ok) return NextResponse.json({ ok: true, message: "Conexão bem-sucedida!" });
-    return NextResponse.json({ error: `Falha na conexão: ${res.status}` }, { status: 400 });
-  } catch {
-    return NextResponse.json({ error: "Não foi possível conectar ao VeoPag" }, { status: 500 });
+    const body = await res.json().catch(() => ({}));
+    const msg = body.message ?? body.error ?? `HTTP ${res.status}`;
+    return NextResponse.json({ error: `Falha na autenticação: ${msg}` }, { status: 400 });
+  } catch (e: any) {
+    const code = e?.cause?.code ?? e?.code ?? e?.message ?? "network error";
+    const hint =
+      code === "ENOTFOUND"    ? " (DNS não resolveu — URL incorreta ou serviço inexistente)" :
+      code === "ECONNREFUSED" ? " (conexão recusada pelo servidor)" : "";
+    return NextResponse.json({ error: `Falha de rede ao conectar em ${baseUrl}: ${code}${hint}` }, { status: 500 });
   }
 }

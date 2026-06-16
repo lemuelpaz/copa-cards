@@ -26,7 +26,12 @@ async function getAccessToken(): Promise<{ token: string; baseUrl: string }> {
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
     });
   } catch (e: any) {
-    throw new Error(`Não foi possível conectar ao gateway de pagamento. (${e?.message ?? "network error"})`);
+    const code = e?.cause?.code ?? e?.code ?? e?.message ?? "network error";
+    const hint =
+      code === "ENOTFOUND"    ? "DNS não resolveu — verifique a URL base em Admin → Gateway." :
+      code === "ECONNREFUSED" ? "Conexão recusada pelo servidor." :
+      code === "CERT_HAS_EXPIRED" ? "Certificado SSL expirado no servidor." : "";
+    throw new Error(`Não foi possível conectar ao gateway (${baseUrl}). Código: ${code}. ${hint}`.trim());
   }
 
   if (!res.ok) {
