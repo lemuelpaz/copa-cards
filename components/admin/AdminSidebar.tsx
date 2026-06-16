@@ -20,7 +20,7 @@ export default function AdminSidebar() {
 
   async function logout() {
     await fetch("/api/auth/logout", { method:"POST" });
-    router.push("/login");
+    router.push("/admin/login");
   }
 
   return (
