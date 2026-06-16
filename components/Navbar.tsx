@@ -1,4 +1,5 @@
 "use client";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -7,6 +8,16 @@ interface Props { balance?: number; role?: string; userName?: string; }
 
 export default function Navbar({ balance, role, userName }: Props) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function close(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
   async function logout() {
     await fetch("/api/auth/logout", { method:"POST" });
@@ -15,10 +26,12 @@ export default function Navbar({ balance, role, userName }: Props) {
   }
 
   return (
-    <nav style={{ background:"#0b130b", borderBottom:"1px solid rgba(0,230,118,.12)",
-      padding:"12px 40px", display:"flex", alignItems:"center", justifyContent:"space-between",
+    <nav className="copa-nav" style={{ background:"#0b130b", borderBottom:"1px solid rgba(0,230,118,.12)",
+      display:"flex", alignItems:"center", justifyContent:"space-between",
       position:"sticky", top:0, zIndex:100 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+
+      {/* Logo */}
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         <span className="bebas" style={{ fontSize:22, color:"#00e676", letterSpacing:3 }}>COPA 2026</span>
         {role === "admin" && (
           <span style={{ fontSize:10, background:"rgba(255,215,0,.15)", color:"#ffd700",
@@ -28,37 +41,94 @@ export default function Navbar({ balance, role, userName }: Props) {
         )}
       </div>
 
-      <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+      {/* Direita */}
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+
+        {/* Saldo — sempre visível */}
         {balance !== undefined && (
           <div style={{ textAlign:"right" }}>
             <div style={{ fontSize:9, color:"rgba(255,255,255,.35)", letterSpacing:2, textTransform:"uppercase" }}>Saldo</div>
-            <div className="bebas" style={{ fontSize:22, color:"#00e676", textShadow:"0 0 20px rgba(0,230,118,.35)" }}>
+            <div className="bebas" style={{ fontSize:20, color:"#00e676", textShadow:"0 0 20px rgba(0,230,118,.3)", lineHeight:1 }}>
               {fmt(balance)}
             </div>
           </div>
         )}
-        {userName && <span style={{ fontSize:13, color:"rgba(255,255,255,.55)" }}>{userName}</span>}
+
+        {/* Links visíveis só no desktop */}
+        <div className="nav-desktop-links">
+          <button onClick={() => router.push("/dashboard")} style={{ fontSize:12, color:"rgba(255,255,255,.5)",
+            background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+            Dashboard
+          </button>
+          {role === "admin" && (
+            <button onClick={() => router.push("/admin")} style={{ fontSize:12, color:"#ffd700",
+              background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+              Admin
+            </button>
+          )}
+          <button onClick={logout} style={{ fontSize:12, color:"rgba(255,255,255,.35)",
+            background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+            Sair
+          </button>
+        </div>
+
+        {/* Botão Depositar */}
         <button onClick={() => router.push("/dashboard/deposit")} style={{
-          padding:"7px 16px", background:"linear-gradient(135deg,#00e676,#00b248)",
+          padding:"7px 14px", background:"linear-gradient(135deg,#00e676,#00b248)",
           border:"none", borderRadius:8, fontFamily:"'Bebas Neue',cursive",
-          fontSize:14, letterSpacing:2, color:"#000", cursor:"pointer" }}>
+          fontSize:14, letterSpacing:2, color:"#000", cursor:"pointer", whiteSpace:"nowrap" }}>
           Depositar
         </button>
-        <button onClick={() => router.push("/dashboard")} style={{ fontSize:12, color:"rgba(255,255,255,.5)",
-          background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
-          Dashboard
-        </button>
-        {role === "admin" && (
-          <button onClick={() => router.push("/admin")} style={{ fontSize:12, color:"#ffd700",
-            background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
-            Admin
+
+        {/* Ícone de usuário com dropdown */}
+        <div ref={dropRef} style={{ position:"relative" }}>
+          <button onClick={() => setOpen(v => !v)} aria-label="Menu do usuário" style={{
+            width:36, height:36, borderRadius:"50%", flexShrink:0,
+            background: open ? "rgba(0,230,118,.2)" : "rgba(0,230,118,.08)",
+            border:"1px solid rgba(0,230,118,.3)", color:"#00e676",
+            cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"background .15s" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
           </button>
-        )}
-        <button onClick={logout} style={{ fontSize:12, color:"rgba(255,255,255,.35)",
-          background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
-          Sair
-        </button>
+
+          {open && (
+            <div style={{ position:"absolute", right:0, top:"calc(100% + 8px)", minWidth:190,
+              background:"#0b130b", border:"1px solid rgba(0,230,118,.18)", borderRadius:12,
+              boxShadow:"0 8px 32px rgba(0,0,0,.6)", overflow:"hidden", zIndex:200 }}>
+
+              {/* Nome do usuário */}
+              {userName && (
+                <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,.06)",
+                  fontSize:12, color:"rgba(255,255,255,.45)",
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {userName}
+                </div>
+              )}
+
+              <DropItem label="Dashboard" onClick={() => { router.push("/dashboard"); setOpen(false); }} />
+              {role === "admin" && (
+                <DropItem label="Admin" color="#ffd700" onClick={() => { router.push("/admin"); setOpen(false); }} />
+              )}
+              <DropItem label="Sair" color="rgba(255,100,100,.85)" onClick={() => { logout(); setOpen(false); }} />
+            </div>
+          )}
+        </div>
       </div>
     </nav>
+  );
+}
+
+function DropItem({ label, color = "#fff", onClick }: { label: string; color?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{ width:"100%", padding:"12px 16px", background:"none", border:"none",
+      borderBottom:"1px solid rgba(255,255,255,.04)", textAlign:"left",
+      color, fontSize:13, cursor:"pointer", transition:"background .12s" }}
+      onMouseEnter={e=>(e.currentTarget.style.background="rgba(0,230,118,.07)")}
+      onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+      {label}
+    </button>
   );
 }

@@ -193,3 +193,12 @@ body::before {
   text-align: center;
   margin-bottom: 28px;
 }
+
+/* ── NAVBAR ── */
+.copa-nav { padding: 12px 16px; }
+@media (min-width: 640px) { .copa-nav { padding: 12px 40px; } }
+
+.nav-desktop-links { display: none; }
+@media (min-width: 640px) {
+  .nav-desktop-links { display: flex; align-items: center; gap: 8px; }
+}
