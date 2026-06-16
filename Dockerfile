@@ -57,13 +57,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static    ./.next/static
 
-# Prisma: apenas o query engine (runtime) — CLI não é necessária em produção
-# db push deve ser executado localmente antes do deploy quando o schema mudar
+# Prisma: query engine + client + CLI para rodar db push no startup
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma          ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client   ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma           ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma                        ./prisma
 
 USER nextjs
 EXPOSE 3000
 
-# Inicia o servidor Next.js standalone diretamente
-CMD ["node", "server.js"]
+# Sincroniza o schema com o banco antes de iniciar o servidor
+CMD ["sh", "-c", "node ./node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss && node server.js"]

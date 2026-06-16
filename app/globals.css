@@ -189,11 +189,7 @@ body::before {
   .login-form-panel { padding: 48px 40px; }
 }
 
-/* logo aparece só no mobile (painel esquerdo some) */
 .login-mobile-logo {
   text-align: center;
   margin-bottom: 28px;
-}
-@media (min-width: 768px) {
-  .login-mobile-logo { display: none; }
 }

@@ -1,7 +1,6 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 
 function LoginForm() {
   const router       = useRouter();
@@ -48,37 +47,6 @@ function LoginForm() {
 
   return (
     <div className="login-root">
-      {/* ── PAINEL ESQUERDO — imagem ── */}
-      <div className="login-image-panel">
-        <Image
-          src="/images/banner-login.webp"
-          alt="Copa 2026"
-          fill
-          priority
-          style={{ objectFit:"cover", objectPosition:"center" }}
-        />
-        {/* overlay escuro suave para dar profundidade */}
-        <div style={{ position:"absolute", inset:0,
-          background:"linear-gradient(135deg, rgba(0,0,0,.45) 0%, rgba(6,12,6,.2) 100%)" }} />
-
-        {/* logotipo flutuante sobre a imagem */}
-        <div style={{ position:"absolute", bottom:40, left:40, right:40 }}>
-          <div className="bebas" style={{
-            fontSize:"clamp(48px,6vw,80px)", lineHeight:.9,
-            background:"linear-gradient(140deg,#fff 0%,#a8ffcf 40%,#00e676 70%,#009944 100%)",
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text",
-            filter:"drop-shadow(0 0 40px rgba(0,230,118,.6))",
-          }}>
-            COPA<br/>2026
-          </div>
-          <p style={{ fontSize:12, color:"rgba(255,255,255,.5)", letterSpacing:4,
-            textTransform:"uppercase", marginTop:10 }}>
-            Colecione os Craques do Mundo
-          </p>
-        </div>
-      </div>
-
-      {/* ── PAINEL DIREITO — formulário ── */}
       <div className="login-form-panel">
         {/* grid de fundo */}
         <div style={{ position:"absolute", inset:0, pointerEvents:"none",
