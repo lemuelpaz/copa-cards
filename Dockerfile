@@ -7,35 +7,37 @@
 #           copa-cards
 # ─────────────────────────────────────────────────────────
 
-# ── Imagem base compartilhada ─────────────────────────────
+# ── Imagem base ───────────────────────────────────────────
 FROM node:20-slim AS base
-RUN apt-get update && apt-get install -y openssl ca-certificates && \
+RUN apt-get update && \
+    apt-get install -y openssl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# ── Stage 1: instalar dependências ───────────────────────
+# ── Stage 1: dependências ─────────────────────────────────
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# ── Stage 2: build da aplicação ──────────────────────────
+# ── Stage 2: build ────────────────────────────────────────
 FROM base AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Gera o Prisma Client com binários para Linux
+# Gera o Prisma Client com binários para Linux (debian e musl/alpine)
 RUN npx prisma generate
 
-# DATABASE_URL fictícia: Next.js não conecta ao banco durante o build
-# (todas as páginas são "use client" — sem SSG com queries)
+# Next.js não conecta ao banco durante o build (todas as páginas são client-side)
+# DATABASE_URL é exigida apenas em runtime pelas API routes
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 RUN npm run build
 
-# ── Stage 3: imagem de produção (standalone) ──────────────
+# ── Stage 3: imagem de produção ───────────────────────────
 FROM base AS runner
 WORKDIR /app
 
@@ -44,29 +46,25 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Usuário sem privilégios (boa prática de segurança)
+# Usuário sem privilégios root
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
 
-# Assets públicos (fotos dos jogadores, imagens dos pacotes, banner)
+# Assets públicos (fotos dos jogadores, pacotes, banner)
 COPY --from=builder /app/public ./public
 
-# Build standalone do Next.js
+# Output standalone do Next.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static    ./.next/static
 
-# Prisma: schema + binário do query engine (não copiado automaticamente)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs \
-     /app/node_modules/.prisma          ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs \
-     /app/node_modules/@prisma/client   ./node_modules/@prisma/client
-COPY --from=builder --chown=nextjs:nodejs \
-     /app/node_modules/prisma           ./node_modules/prisma
+# Prisma: schema + engine binário (não incluído automaticamente no standalone)
+COPY --from=builder /app/prisma                           ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma          ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client   ./node_modules/@prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma           ./node_modules/prisma
 
 USER nextjs
 EXPOSE 3000
 
-# Sincroniza o schema no banco (idempotente) e inicia o servidor
-CMD ["sh", "-c", \
-  "node node_modules/prisma/build/index.js db push --skip-generate && node server.js"]
+# Sincroniza schema no banco (idempotente) e inicia o servidor
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate && node server.js"]
