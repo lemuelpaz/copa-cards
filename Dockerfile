@@ -57,11 +57,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static    ./.next/static
 
-# Prisma: query engine + client + CLI para rodar db push no startup
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma          ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client   ./node_modules/@prisma/client
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma           ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma                        ./prisma
+# Prisma: query engine + todos os pacotes @prisma/* + CLI para rodar db push no startup
+# @prisma/engines é necessário para o schema engine (db push/migrate)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma  ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma  ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma   ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma                ./prisma
 
 USER nextjs
 EXPOSE 3000
