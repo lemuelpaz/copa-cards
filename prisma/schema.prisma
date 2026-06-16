@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  phone        String        @unique
+  name         String?
+  balance      Float         @default(1000)
+  role         String        @default("user")
+  createdAt    DateTime      @default(now())
+  referredById String?
+  transactions Transaction[]
+  withdrawals  Withdrawal[]
+  deposits     Deposit[]
+  affiliate    Affiliate?
+}
+
+model Card {
+  id        String   @id @default(cuid())
+  name      String
+  country   String
+  flag      String
+  position  String
+  rating    Int
+  rarity    String
+  value     Float
+  photo     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Pack {
+  id              String  @id @default(cuid())
+  name            String
+  badge           String
+  icon            String
+  cards           Int     @default(5)
+  price           Float
+  wCommon         Int     @default(60)
+  wRare           Int     @default(30)
+  wEpic           Int     @default(8)
+  wLegendary      Int     @default(2)
+  active          Boolean @default(true)
+  cssClass        String  @default("t-bronze")
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  amount    Float
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+model Withdrawal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  pixKey    String
+  pixType   String   @default("cpf")
+  status    String   @default("pending")
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Deposit {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  amount       Float
+  status       String    @default("pending")
+  txid         String?
+  qrcode       String?
+  qrcodeBase64 String?
+  qrcodeUrl    String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Affiliate {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  code        String   @unique
+  percent     Float    @default(10)
+  status      String   @default("pending")
+  totalEarned Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model SiteConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}

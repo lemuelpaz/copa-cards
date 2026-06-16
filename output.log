@@ -1,0 +1,23 @@
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:8080
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.7s
+ ○ Compiling / ...
+ ✓ Compiled / in 1175ms (485 modules)
+ GET / 200 in 1481ms
+ GET / 200 in 73ms
+ ○ Compiling /api/admin/banner ...
+ ✓ Compiled /api/admin/banner in 1067ms (369 modules)
+ ✓ Compiled (378 modules)
+ GET /api/auth/me 200 in 1459ms
+ GET /api/admin/banner 403 in 1472ms
+ GET /api/packs 200 in 1487ms
+ GET /api/cards 200 in 1493ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.6s (641 modules)
+ GET /api/admin/banner 403 in 2696ms
+ GET /api/auth/me 200 in 2697ms
+ GET /api/cards 200 in 2684ms
+ GET /api/packs 200 in 2701ms
