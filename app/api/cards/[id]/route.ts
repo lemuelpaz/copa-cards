@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+
+export const dynamic = 'force-dynamic'
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 

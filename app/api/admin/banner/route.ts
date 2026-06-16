@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { setConfig, getAllConfigs } from "@/lib/utils";
 import { writeFile } from "fs/promises";
 import path from "path";
+
+export const dynamic = 'force-dynamic'
+
 
 export async function GET() {
   const session = await getSession();

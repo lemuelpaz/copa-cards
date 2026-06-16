@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { signToken, setCookie } from "@/lib/auth";
 import { formatPhone, getConfig } from "@/lib/utils";
+
+export const dynamic = 'force-dynamic'
+
 
 export async function POST(req: NextRequest) {
   const { phone, name, refCode } = await req.json();

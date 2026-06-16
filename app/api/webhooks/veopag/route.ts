@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/veopag";
+
+export const dynamic = 'force-dynamic'
+
 
 export async function POST(req: NextRequest) {
   const payload   = await req.text();

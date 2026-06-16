@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { writeFile } from "fs/promises";
 import path from "path";
+
+export const dynamic = 'force-dynamic'
+
 
 export async function GET() {
   const cards = await db.card.findMany({ where: { active: true }, orderBy: { rarity: "asc" } });
