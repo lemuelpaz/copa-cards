@@ -1,22 +1,41 @@
 import { getConfig } from "./utils";
 
-async function getAccessToken(): Promise<string> {
+async function getGatewayConfig() {
   const clientId     = await getConfig("veopag_client_id");
   const clientSecret = await getConfig("veopag_client_secret");
   const baseUrl      = await getConfig("veopag_base_url");
 
-  if (!clientId || !clientSecret)
-    throw new Error("Credenciais VeoPag não configuradas. Configure em Admin → Gateway.");
+  if (!clientId || !clientSecret || !baseUrl)
+    throw new Error("Gateway de pagamento não configurado. Acesse Admin → Gateway.");
 
-  const res = await fetch(`${baseUrl}/v1/auth/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
-  });
+  try { new URL(baseUrl); } catch {
+    throw new Error("URL do gateway inválida. Configure em Admin → Gateway.");
+  }
 
-  if (!res.ok) throw new Error(`Autenticação VeoPag falhou (${res.status})`);
+  return { clientId, clientSecret, baseUrl };
+}
+
+async function getAccessToken(): Promise<{ token: string; baseUrl: string }> {
+  const { clientId, clientSecret, baseUrl } = await getGatewayConfig();
+
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/auth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+    });
+  } catch (e: any) {
+    throw new Error(`Não foi possível conectar ao gateway de pagamento. (${e?.message ?? "network error"})`);
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? body.error ?? `Autenticação no gateway falhou (${res.status})`);
+  }
+
   const data = await res.json();
-  return data.access_token;
+  return { token: data.access_token, baseUrl };
 }
 
 export interface PixCharge {
@@ -32,35 +51,39 @@ export async function createPixCharge(params: {
   externalId:  string;
   description: string;
 }): Promise<PixCharge> {
-  const token   = await getAccessToken();
-  const baseUrl = await getConfig("veopag_base_url");
+  const { token, baseUrl } = await getAccessToken();
 
-  const res = await fetch(`${baseUrl}/v1/pix/cobrancas`, {
-    method: "POST",
-    headers: {
-      "Content-Type":  "application/json",
-      Authorization:   `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      valor:       params.amount,
-      descricao:   params.description,
-      external_id: params.externalId,
-      expiracao:   3600,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/pix/cobrancas`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:  `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        valor:       params.amount,
+        descricao:   params.description,
+        external_id: params.externalId,
+        expiracao:   3600,
+      }),
+    });
+  } catch (e: any) {
+    throw new Error(`Erro ao criar cobrança PIX. (${e?.message ?? "network error"})`);
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? err.error ?? `Erro VeoPag ${res.status}`);
+    throw new Error(err.message ?? err.error ?? `Erro ao criar cobrança PIX (${res.status})`);
   }
 
   const d = await res.json();
   return {
-    txid:          d.id        ?? d.txid        ?? d.e2eId,
-    qrcode:        d.qrcode    ?? d.emv         ?? d.payload ?? d.qr_code,
-    qrcodeBase64:  d.qrcode_image ?? d.qrcode_base64 ?? d.image_base64,
-    qrcodeUrl:     d.qrcode_url   ?? d.image_url,
-    expiresAt:     d.expires_at   ?? d.expiracao ?? d.expiresAt,
+    txid:         d.id            ?? d.txid         ?? d.e2eId,
+    qrcode:       d.qrcode        ?? d.emv          ?? d.payload   ?? d.qr_code,
+    qrcodeBase64: d.qrcode_image  ?? d.qrcode_base64 ?? d.image_base64,
+    qrcodeUrl:    d.qrcode_url    ?? d.image_url,
+    expiresAt:    d.expires_at    ?? d.expiracao     ?? d.expiresAt,
   };
 }
 
