@@ -144,54 +144,15 @@ export default function HomePage() {
                     onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-8px) scale(1.02)"; e.currentTarget.style.boxShadow="0 20px 60px rgba(255,215,0,.3)"; }}
                     onMouseLeave={e=>{ e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow=""; }}>
 
-                    {/* Visual da máquina */}
-                    <div style={{
-                      aspectRatio:"747 / 1347",
-                      display:"flex", flexDirection:"column",
-                      alignItems:"center", justifyContent:"center",
-                      gap:12, padding:"16px 12px",
-                      background:"linear-gradient(160deg,#0c1e3a 0%,#060e1a 100%)",
-                      position:"relative", overflow:"hidden",
-                    }}>
-                      {/* Brilho de fundo */}
-                      <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,215,0,.08) 0%, transparent 70%)", pointerEvents:"none" }} />
-
-                      <div style={{ fontSize:52, animation:"floatY 2.4s ease-in-out infinite", position:"relative", zIndex:1 }}>🎰</div>
-
-                      <div style={{ position:"relative", zIndex:1, textAlign:"center" }}>
-                        <div className="bebas" style={{ fontSize:22, letterSpacing:4, color:"#ffd700", textShadow:"0 0 20px rgba(255,215,0,.5)", lineHeight:1 }}>
-                          SLOT DE
-                        </div>
-                        <div className="bebas" style={{ fontSize:22, letterSpacing:4, color:"#ffd700", textShadow:"0 0 20px rgba(255,215,0,.5)", lineHeight:1 }}>
-                          JOGADORES
-                        </div>
-                        <div style={{ fontSize:9, letterSpacing:3, color:"rgba(255,215,0,.55)", marginTop:6 }}>
-                          O CASSINO DOS CRAQUES
-                        </div>
-                      </div>
-
-                      {/* Mini reels decorativos */}
-                      <div style={{ display:"flex", gap:6, position:"relative", zIndex:1 }}>
-                        {["🇧🇷","🇧🇷","🇧🇷"].map((flag,i) => (
-                          <div key={i} style={{
-                            width:44, height:54, borderRadius:7,
-                            background:"rgba(255,215,0,.08)",
-                            border:"1px solid rgba(255,215,0,.25)",
-                            display:"flex", alignItems:"center", justifyContent:"center",
-                            fontSize:22,
-                          }}>{flag}</div>
-                        ))}
-                      </div>
-
-                      {/* Features */}
-                      <div style={{ display:"flex", gap:10, position:"relative", zIndex:1 }}>
-                        {[["💎","Épicos"],["👑","Exclusivos"],["💰","Dobre"]].map(([icon,label]) => (
-                          <div key={label} style={{ textAlign:"center" }}>
-                            <div style={{ fontSize:18 }}>{icon}</div>
-                            <div style={{ fontSize:7, color:"rgba(255,255,255,.4)", letterSpacing:1, marginTop:2 }}>{label}</div>
-                          </div>
-                        ))}
-                      </div>
+                    {/* Imagem de referência do slot */}
+                    <div style={{ position:"relative", width:"100%", aspectRatio:"747 / 1347" }}>
+                      <Image
+                        src="/packs/pack-slot.png"
+                        alt={pack.name}
+                        fill
+                        sizes="(max-width:768px) 50vw, 25vw"
+                        style={{ objectFit:"contain" }}
+                      />
                     </div>
 
                     {/* Info abaixo */}

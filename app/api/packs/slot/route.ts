@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getConfig } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +42,15 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const multiplier = parseFloat((await getConfig("slot_multiplier")) || "2");
+
   const results = [pickResult(), pickResult(), pickResult()];
   const strips  = results.map(r => buildStrip(r));
   const win     = results.every(r => r.country === "Brasil");
 
   const bet        = pack.price;
-  const payout     = win ? bet * 2 : 0;
-  const newBalance = user.balance - bet + payout;
+  const payout     = win ? parseFloat((bet * multiplier).toFixed(2)) : 0;
+  const newBalance = parseFloat((user.balance - bet + payout).toFixed(2));
 
   await db.$transaction([
     db.user.update({ where: { id: user.id }, data: { balance: newBalance } }),
@@ -55,7 +58,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       type:   "pack_open",
       amount: payout - bet,
-      detail: `Slot de Jogadores — ${win ? "JACKPOT 🎰" : "Sem prêmio"}`,
+      detail: `Slot de Jogadores — ${win ? `JACKPOT ${multiplier}× 🎰` : "Sem prêmio"}`,
     }}),
   ]);
 
@@ -64,6 +67,7 @@ export async function POST(req: NextRequest) {
     win,
     bet,
     payout,
+    multiplier,
     newBalance,
   });
 }

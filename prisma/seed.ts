@@ -84,6 +84,7 @@ async function main() {
     { key: "veopag_webhook_secret", value: "" },
     { key: "veopag_environment", value: "sandbox" },
     { key: "veopag_base_url",    value: "https://api.veopag.com" },
+    { key: "slot_multiplier",    value: "2" },
   ];
 
   for (const c of configs) {

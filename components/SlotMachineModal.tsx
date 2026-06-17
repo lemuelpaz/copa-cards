@@ -30,7 +30,7 @@ interface CardData {
   photo?: string | null;
 }
 interface ReelData  { strip: CardData[]; result: CardData; }
-interface SlotResult { reels: ReelData[]; win: boolean; bet: number; payout: number; newBalance: number; }
+interface SlotResult { reels: ReelData[]; win: boolean; bet: number; payout: number; multiplier: number; newBalance: number; }
 interface Pack { id: string; name: string; icon: string; cssClass: string; price: number; }
 interface Props { pack: Pack | null; onClose: () => void; onResult: (balance: number) => void; }
 
@@ -122,6 +122,13 @@ export default function SlotMachineModal({ pack, onClose, onResult }: Props) {
   const [result,          setResult]         = useState<SlotResult | null>(null);
   const [loading,         setLoading]        = useState(false);
   const [error,           setError]          = useState("");
+  const [multiplier,      setMultiplier]     = useState(2);
+
+  useEffect(() => {
+    fetch("/api/admin/slot").then(r => r.json()).then(d => {
+      if (d.multiplier) setMultiplier(d.multiplier);
+    }).catch(() => {});
+  }, []);
   const [reelY,           setReelY]          = useState([INIT_Y, INIT_Y, INIT_Y]);
   const [reelTransition,  setReelTransition] = useState([false, false, false]);
   const [reelStopped,     setReelStopped]    = useState([false, false, false]);
@@ -323,7 +330,9 @@ export default function SlotMachineModal({ pack, onClose, onResult }: Props) {
               <span style={{ fontSize: 22 }}>🇧🇷🇧🇷🇧🇷</span>
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 11, color: "#fff", fontWeight: 700 }}>3 Jogadores do Brasil</div>
-                <div style={{ fontSize: 10, color: "#00e676", marginTop: 2 }}>Dobra a aposta — 2× {fmt(pack.price)}</div>
+                <div style={{ fontSize: 10, color: "#00e676", marginTop: 2 }}>
+                  {multiplier}× a aposta — {fmt(pack.price * multiplier)}
+                </div>
               </div>
             </div>
             <div style={{ height: 1, background: "rgba(255,215,0,.12)" }} />
@@ -407,7 +416,7 @@ export default function SlotMachineModal({ pack, onClose, onResult }: Props) {
                     🏆 JACKPOT!
                   </div>
                   <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4, letterSpacing: 2 }}>
-                    3 JOGADORES DO BRASIL!
+                    3 JOGADORES DO BRASIL — {result.multiplier ?? multiplier}×
                   </div>
                 </>
               ) : (
