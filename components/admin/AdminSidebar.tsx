@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CreditCard, Image, DollarSign, Zap, Settings, Users, LogOut, Users2 } from "lucide-react";
+import { LayoutDashboard, CreditCard, Image, DollarSign, Zap, Settings, Users, LogOut, Users2, Package } from "lucide-react";
 
 const nav = [
   { href:"/admin",              label:"Dashboard",    icon:LayoutDashboard },
   { href:"/admin/cards",        label:"Figurinhas",   icon:CreditCard },
+  { href:"/admin/packs",        label:"Pacotes",      icon:Package },
   { href:"/admin/banner",       label:"Banner",       icon:Image },
   { href:"/admin/financial",    label:"Financeiro",   icon:DollarSign },
   { href:"/admin/gateway",      label:"VeoPag",       icon:Zap },

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import QRCode from "qrcode";
 import Navbar from "@/components/Navbar";
 
 const fmt = (v: number) =>
@@ -56,6 +57,14 @@ export default function DepositPage() {
     timerRef.current = setInterval(tick, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [expiresAt, status]);
+
+  // Generate QR code image from PIX string when the API doesn't return one
+  useEffect(() => {
+    if (!qrcode || qrcodeBase64 || qrcodeUrl) return;
+    QRCode.toDataURL(qrcode, { width: 300, margin: 2, color: { dark: "#000", light: "#fff" } })
+      .then(dataUrl => setQrcodeBase64(dataUrl.replace("data:image/png;base64,", "")))
+      .catch(() => {});
+  }, [qrcode]);
 
   // Poll deposit status
   useEffect(() => {

@@ -20,7 +20,7 @@ async function getAccessToken(): Promise<{ token: string; baseUrl: string }> {
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}/login`, {
+    res = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
@@ -69,7 +69,7 @@ export async function createPixCharge(params: {
   const siteUrl = await getConfig("site_url");
 
   const body: Record<string, unknown> = {
-    amount:      Math.round(params.amount * 100), // centavos
+    amount:      params.amount, // reais (float)
     external_id: params.externalId,
   };
 
@@ -87,7 +87,7 @@ export async function createPixCharge(params: {
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}/api/transactions/deposit`, {
+    res = await fetch(`${baseUrl}/api/payments/deposit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -105,12 +105,13 @@ export async function createPixCharge(params: {
   }
 
   const d = await res.json();
+  const r = d.qrCodeResponse ?? d;
   return {
-    txid:        d.transaction_id ?? d.txid ?? d.id ?? params.externalId,
-    qrcode:      d.qrcode         ?? d.emv  ?? d.payload ?? d.qr_code ?? "",
-    qrcodeBase64: d.qrcode_image  ?? d.qrcode_base64 ?? d.image_base64,
-    qrcodeUrl:    d.qrcode_url    ?? d.image_url,
-    expiresAt:    d.expires_at    ?? d.expiracao ?? d.expiresAt
+    txid:         r.transactionId  ?? r.transaction_id ?? r.txid ?? r.id ?? params.externalId,
+    qrcode:       r.qrcode         ?? r.emv ?? r.payload ?? r.qr_code ?? "",
+    qrcodeBase64: r.qrcode_image   ?? r.qrcode_base64  ?? r.image_base64,
+    qrcodeUrl:    r.qrcode_url     ?? r.image_url,
+    expiresAt:    r.expires_at     ?? r.expiracao ?? r.expiresAt
                     ?? new Date(Date.now() + 3_600_000).toISOString(),
   };
 }
