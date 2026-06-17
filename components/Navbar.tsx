@@ -7,9 +7,26 @@ const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDi
 interface Props { balance?: number; role?: string; userName?: string; }
 
 export default function Navbar({ balance, role, userName }: Props) {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const dropRef = useRef<HTMLDivElement>(null);
+  const router  = useRouter();
+  const [open,    setOpen]    = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const dropRef  = useRef<HTMLDivElement>(null);
+
+  function toggleMusic() {
+    if (!audioRef.current) {
+      audioRef.current      = new Audio("/music/pais-do-futebol.mp3");
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.35;
+    }
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioRef.current.play().catch(() => {});
+      setPlaying(true);
+    }
+  }
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -71,6 +88,31 @@ export default function Navbar({ balance, role, userName }: Props) {
             Sair
           </button>
         </div>
+
+        {/* Botão de música */}
+        <button onClick={toggleMusic} aria-label={playing ? "Pausar música" : "Tocar música"} style={{
+          width:36, height:36, borderRadius:"50%", flexShrink:0,
+          background: playing ? "rgba(0,230,118,.15)" : "transparent",
+          border: `1px solid ${playing ? "rgba(0,230,118,.4)" : "rgba(255,255,255,.12)"}`,
+          color: playing ? "#00e676" : "rgba(255,255,255,.35)",
+          cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+          transition:"all .2s" }}>
+          {playing ? (
+            /* Volume com ondas */
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          ) : (
+            /* Volume com traço (mudo) */
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+          )}
+        </button>
 
         {/* Botão Depositar */}
         <button onClick={() => router.push("/dashboard/deposit")} style={{
