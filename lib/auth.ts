@@ -3,8 +3,8 @@ import { cookies } from "next/headers";
 
 function getSecret() {
   const s = process.env.JWT_SECRET;
-  if (!s) throw new Error("JWT_SECRET environment variable is required");
-  return new TextEncoder().encode(s);
+  if (!s) console.error("[auth] JWT_SECRET not set — using insecure fallback. Set this env var in production.");
+  return new TextEncoder().encode(s ?? "copa2026-fallback-set-JWT_SECRET-in-render");
 }
 const COOKIE = "copa_token";
 
