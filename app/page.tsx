@@ -5,6 +5,7 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import PlayerCard, { CardData } from "@/components/PlayerCard";
 import PackOpenModal from "@/components/PackOpenModal";
+import SlotMachineModal from "@/components/SlotMachineModal";
 
 const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
 
@@ -16,6 +17,7 @@ const packColors: Record<string,{shadow:string}> = {
   "t-silver":    { shadow:"rgba(150,150,200,.2)" },
   "t-gold":      { shadow:"rgba(255,215,0,.25)"  },
   "t-legendary": { shadow:"rgba(180,0,255,.25)"  },
+  "t-slot":      { shadow:"rgba(255,215,0,.35)"  },
 };
 
 const packImages: Record<string, string> = {
@@ -127,7 +129,110 @@ export default function HomePage() {
           <div className="packs-grid">
             {packs.map(pack => {
               const ps  = packColors[pack.cssClass] ?? packColors["t-bronze"];
-              const img = packImages[pack.cssClass]  ?? "/packs/pack-basico.webp";
+
+              /* ── Card especial: Slot de Jogadores ── */
+              if (pack.cssClass === "t-slot") {
+                return (
+                  <div key={pack.id}
+                    style={{
+                      borderRadius:20, overflow:"hidden", cursor:"pointer",
+                      background:"linear-gradient(160deg,#0c1e3a,#06101f)",
+                      border:"1px solid rgba(255,215,0,.35)",
+                      display:"flex", flexDirection:"column",
+                      transition:"transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s",
+                    }}
+                    onMouseEnter={e=>{ e.currentTarget.style.transform="translateY(-8px) scale(1.02)"; e.currentTarget.style.boxShadow="0 20px 60px rgba(255,215,0,.3)"; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.transform=""; e.currentTarget.style.boxShadow=""; }}>
+
+                    {/* Visual da máquina */}
+                    <div style={{
+                      aspectRatio:"747 / 1347",
+                      display:"flex", flexDirection:"column",
+                      alignItems:"center", justifyContent:"center",
+                      gap:12, padding:"16px 12px",
+                      background:"linear-gradient(160deg,#0c1e3a 0%,#060e1a 100%)",
+                      position:"relative", overflow:"hidden",
+                    }}>
+                      {/* Brilho de fundo */}
+                      <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,215,0,.08) 0%, transparent 70%)", pointerEvents:"none" }} />
+
+                      <div style={{ fontSize:52, animation:"floatY 2.4s ease-in-out infinite", position:"relative", zIndex:1 }}>🎰</div>
+
+                      <div style={{ position:"relative", zIndex:1, textAlign:"center" }}>
+                        <div className="bebas" style={{ fontSize:22, letterSpacing:4, color:"#ffd700", textShadow:"0 0 20px rgba(255,215,0,.5)", lineHeight:1 }}>
+                          SLOT DE
+                        </div>
+                        <div className="bebas" style={{ fontSize:22, letterSpacing:4, color:"#ffd700", textShadow:"0 0 20px rgba(255,215,0,.5)", lineHeight:1 }}>
+                          JOGADORES
+                        </div>
+                        <div style={{ fontSize:9, letterSpacing:3, color:"rgba(255,215,0,.55)", marginTop:6 }}>
+                          O CASSINO DOS CRAQUES
+                        </div>
+                      </div>
+
+                      {/* Mini reels decorativos */}
+                      <div style={{ display:"flex", gap:6, position:"relative", zIndex:1 }}>
+                        {["🇧🇷","🇧🇷","🇧🇷"].map((flag,i) => (
+                          <div key={i} style={{
+                            width:44, height:54, borderRadius:7,
+                            background:"rgba(255,215,0,.08)",
+                            border:"1px solid rgba(255,215,0,.25)",
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                            fontSize:22,
+                          }}>{flag}</div>
+                        ))}
+                      </div>
+
+                      {/* Features */}
+                      <div style={{ display:"flex", gap:10, position:"relative", zIndex:1 }}>
+                        {[["💎","Épicos"],["👑","Exclusivos"],["💰","Dobre"]].map(([icon,label]) => (
+                          <div key={label} style={{ textAlign:"center" }}>
+                            <div style={{ fontSize:18 }}>{icon}</div>
+                            <div style={{ fontSize:7, color:"rgba(255,255,255,.4)", letterSpacing:1, marginTop:2 }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Info abaixo */}
+                    <div style={{ padding:"14px 16px 16px", display:"flex", flexDirection:"column", gap:10 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{
+                          fontSize:9, fontWeight:800, letterSpacing:3, textTransform:"uppercase",
+                          padding:"3px 10px", borderRadius:20, whiteSpace:"nowrap",
+                          background:"rgba(255,215,0,.12)", color:"#ffd700", border:"1px solid rgba(255,215,0,.35)",
+                        }}>
+                          {pack.badge}
+                        </span>
+                        <span className="bebas" style={{ fontSize:17, letterSpacing:2, color:"#fff" }}>
+                          {pack.name}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,.35)", letterSpacing:1 }}>
+                        3 jogadores Brasil = 2× aposta
+                      </div>
+
+                      <button onClick={()=>setActivePack(pack)}
+                        style={{
+                          width:"100%", padding:"12px 8px", border:"none", borderRadius:10,
+                          fontFamily:"'Bebas Neue',cursive", fontSize:17, letterSpacing:2, cursor:"pointer",
+                          transition:"opacity .2s",
+                          background:"linear-gradient(135deg,#ffd700,#ff8c00)",
+                          color:"#000",
+                          boxShadow:"0 0 20px rgba(255,215,0,.25)",
+                        }}
+                        onMouseEnter={e=>(e.currentTarget.style.opacity=".85")}
+                        onMouseLeave={e=>(e.currentTarget.style.opacity="1")}>
+                        Girar — {fmt(pack.price)}
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ── Cards padrão ── */
+              const img = packImages[pack.cssClass] ?? "/packs/pack-basico.webp";
               const accentColor =
                 pack.cssClass==="t-legendary" ? "#cf6fff" :
                 pack.cssClass==="t-gold"      ? "#ffd700" :
@@ -213,8 +318,15 @@ export default function HomePage() {
         ))}
       </main>
 
-      {/* MODAL */}
-      {activePack && (
+      {/* MODAIS */}
+      {activePack && activePack.cssClass === "t-slot" && (
+        <SlotMachineModal
+          pack={activePack}
+          onClose={() => setActivePack(null)}
+          onResult={(bal) => setUser(u => u ? { ...u, balance:bal } : u)}
+        />
+      )}
+      {activePack && activePack.cssClass !== "t-slot" && (
         <PackOpenModal
           pack={activePack}
           onClose={() => setActivePack(null)}

@@ -5,9 +5,10 @@ const prisma = new PrismaClient();
 async function main() {
   // Default packs
   const packs = [
-    { id:"bronze",    name:"Pacote Bronze",   badge:"BRONZE",   icon:"⚽", cards:3, price:50,  wCommon:80, wRare:16, wEpic:3,  wLegendary:1,  cssClass:"t-bronze"   },
-    { id:"gold",      name:"Pacote Ouro",     badge:"OURO",     icon:"🏅", cards:5, price:350, wCommon:20, wRare:40, wEpic:28, wLegendary:12, cssClass:"t-gold"     },
-    { id:"legendary", name:"Pacote Lendário", badge:"LENDÁRIO", icon:"🏆", cards:5, price:700, wCommon:0,  wRare:20, wEpic:45, wLegendary:35, cssClass:"t-legendary"},
+    { id:"bronze",    name:"Pacote Bronze",      badge:"BRONZE",   icon:"⚽", cards:3, price:50,  wCommon:80, wRare:16, wEpic:3,  wLegendary:1,  cssClass:"t-bronze"   },
+    { id:"gold",      name:"Pacote Ouro",        badge:"OURO",     icon:"🏅", cards:5, price:350, wCommon:20, wRare:40, wEpic:28, wLegendary:12, cssClass:"t-gold"     },
+    { id:"legendary", name:"Pacote Lendário",    badge:"LENDÁRIO", icon:"🏆", cards:5, price:700, wCommon:0,  wRare:20, wEpic:45, wLegendary:35, cssClass:"t-legendary"},
+    { id:"slot",      name:"Slot de Jogadores",  badge:"CASSINO",  icon:"🎰", cards:1, price:100, wCommon:1,  wRare:0,  wEpic:0,  wLegendary:0,  cssClass:"t-slot"     },
   ];
 
   for (const p of packs) {
