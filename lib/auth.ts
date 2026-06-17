@@ -1,8 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET environment variable is required");
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+function getSecret() {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error("JWT_SECRET environment variable is required");
+  return new TextEncoder().encode(s);
+}
 const COOKIE = "copa_token";
 
 export interface JWTPayload {
@@ -15,12 +18,12 @@ export async function signToken(payload: JWTPayload) {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(SECRET);
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as JWTPayload;
   } catch {
     return null;
