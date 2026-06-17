@@ -73,6 +73,10 @@ export default function Navbar({ balance, role, userName }: Props) {
 
         {/* Links visíveis só no desktop */}
         <div className="nav-desktop-links">
+          <button onClick={() => router.push("/album")} style={{ fontSize:12, color:"rgba(255,255,255,.5)",
+            background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
+            Álbum
+          </button>
           <button onClick={() => router.push("/dashboard")} style={{ fontSize:12, color:"rgba(255,255,255,.5)",
             background:"none", border:"none", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
             Dashboard
@@ -150,6 +154,7 @@ export default function Navbar({ balance, role, userName }: Props) {
                 </div>
               )}
 
+              <DropItem label="Álbum"     onClick={() => { router.push("/album");     setOpen(false); }} />
               <DropItem label="Dashboard" onClick={() => { router.push("/dashboard"); setOpen(false); }} />
               {role === "admin" && (
                 <DropItem label="Admin" color="#ffd700" onClick={() => { router.push("/admin"); setOpen(false); }} />

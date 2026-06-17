@@ -21,10 +21,11 @@ model User {
   withdrawals  Withdrawal[]
   deposits     Deposit[]
   affiliate    Affiliate?
+  userCards    UserCard[]
 }
 
 model Card {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
   country   String
   flag      String
@@ -33,8 +34,18 @@ model Card {
   rarity    String
   value     Float
   photo     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  userCards UserCard[]
+}
+
+model UserCard {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  cardId     String
+  card       Card     @relation(fields: [cardId], references: [id])
+  obtainedAt DateTime @default(now())
 }
 
 model Pack {

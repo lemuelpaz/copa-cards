@@ -60,6 +60,28 @@ export default function HomePage() {
     <>
       <Navbar balance={user.balance} role={user.role} userName={user.name??user.phone} />
 
+      {/* Tab strip */}
+      <div style={{
+        background:"#0b130b", borderBottom:"1px solid rgba(0,230,118,.1)",
+        display:"flex", alignItems:"center", padding:"0 24px", gap:4,
+      }}>
+        {[
+          { label:"🏪 Loja",  href:"/"       },
+          { label:"📒 Álbum", href:"/album"  },
+        ].map(tab => (
+          <button key={tab.href} onClick={()=>router.push(tab.href)}
+            style={{
+              padding:"14px 20px", background:"none", border:"none",
+              borderBottom:`2px solid ${tab.href==="/" ? "#00e676" : "transparent"}`,
+              color: tab.href==="/" ? "#00e676" : "rgba(255,255,255,.4)",
+              fontFamily:"'Bebas Neue',cursive", fontSize:16, letterSpacing:3,
+              cursor:"pointer", transition:"color .15s", marginBottom:-1,
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* BANNER */}
       <header style={{ position:"relative", borderBottom:"1px solid rgba(0,230,118,.15)", overflow:"hidden" }}>
         <div className="banner-inner" style={{ position:"relative", overflow:"hidden" }}>

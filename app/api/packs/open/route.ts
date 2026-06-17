@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       amount: totalValue - pack.price,
       detail: `${pack.name} — ${winner.name}`,
     }}),
+    db.userCard.create({ data: { userId: user.id, cardId: winner.id } }),
   ];
 
   // Comissão de afiliado: se o usuário foi referido por um afiliado ativo
