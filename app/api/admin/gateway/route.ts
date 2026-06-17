@@ -10,8 +10,12 @@ export async function GET() {
   if (!session || session.role !== "admin") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 
   const keys = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_base_url"];
+  const SECRETS = new Set(["veopag_client_secret","veopag_webhook_secret"]);
   const result: Record<string,string> = {};
-  for (const k of keys) result[k] = await getConfig(k);
+  for (const k of keys) {
+    const val = await getConfig(k);
+    result[k] = SECRETS.has(k) && val ? "••••••••" : (val ?? "");
+  }
   return NextResponse.json({ config: result });
 }
 
@@ -21,8 +25,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const allowed = ["veopag_client_id","veopag_client_secret","veopag_webhook_secret","veopag_base_url"];
+  const MASK = "••••••••";
   for (const key of allowed) {
-    if (body[key] !== undefined) await setConfig(key, String(body[key]));
+    if (body[key] !== undefined && body[key] !== MASK) await setConfig(key, String(body[key]));
   }
 
   return NextResponse.json({ ok: true });

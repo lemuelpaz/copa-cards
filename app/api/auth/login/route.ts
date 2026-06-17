@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     let user = await db.user.findUnique({ where: { phone: clean } });
 
     if (!user) {
-      let initialBalance = 1000;
+      let initialBalance = 0;
       try {
         const cfg = await getConfig("initial_balance");
         if (cfg) initialBalance = parseFloat(cfg);

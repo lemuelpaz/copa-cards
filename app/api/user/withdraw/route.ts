@@ -12,9 +12,13 @@ export async function POST(req: NextRequest) {
 
   const { amount, pixKey, pixType } = await req.json();
   const minW = parseFloat((await getConfig("min_withdrawal")) || "50");
+  const maxW = parseFloat((await getConfig("max_withdrawal")) || "0");
 
+  const PIX_TYPES = ["cpf", "cnpj", "phone", "email", "random"];
   if (!amount || amount < minW) return NextResponse.json({ error: `Valor mínimo de saque: R$ ${minW}` }, { status: 400 });
+  if (maxW > 0 && amount > maxW) return NextResponse.json({ error: `Valor máximo de saque: R$ ${maxW}` }, { status: 400 });
   if (!pixKey) return NextResponse.json({ error: "Chave PIX obrigatória" }, { status: 400 });
+  if (pixType && !PIX_TYPES.includes(pixType)) return NextResponse.json({ error: "Tipo de chave PIX inválido" }, { status: 400 });
 
   const user = await db.user.findUnique({ where: { id: session.userId } });
   if (!user || user.balance < amount) return NextResponse.json({ error: "Saldo insuficiente" }, { status: 400 });

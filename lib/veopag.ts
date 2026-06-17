@@ -121,7 +121,7 @@ export async function verifyWebhookSignature(
   signature: string,
 ): Promise<boolean> {
   const secret = await getConfig("veopag_webhook_secret");
-  if (!secret) return true;
+  if (!secret) return false;
 
   try {
     const enc = new TextEncoder();

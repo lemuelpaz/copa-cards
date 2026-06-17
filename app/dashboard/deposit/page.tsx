@@ -214,11 +214,11 @@ export default function DepositPage() {
 
             {/* QR code image */}
             {(qrcodeBase64 || qrcodeUrl) && (
-              <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 20 }}>
                 <img
                   src={qrcodeBase64 ? `data:image/png;base64,${qrcodeBase64}` : qrcodeUrl}
                   alt="QR Code PIX"
-                  style={{ width: 200, height: 200, borderRadius: 12,
+                  style={{ width: 200, height: 200, borderRadius: 12, display: "block",
                     border: "2px solid rgba(0,230,118,.25)", background: "#fff", padding: 4 }}
                 />
               </div>

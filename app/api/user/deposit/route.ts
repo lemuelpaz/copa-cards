@@ -13,10 +13,16 @@ export async function POST(req: NextRequest) {
 
   const { amount } = await req.json();
   const minDeposit = parseFloat((await getConfig("min_deposit")) || "10");
+  const maxDeposit = parseFloat((await getConfig("max_deposit")) || "0");
 
   if (!amount || isNaN(amount) || amount < minDeposit)
     return NextResponse.json(
       { error: `Valor mínimo de depósito: R$ ${minDeposit.toFixed(2)}` },
+      { status: 400 },
+    );
+  if (maxDeposit > 0 && amount > maxDeposit)
+    return NextResponse.json(
+      { error: `Valor máximo de depósito: R$ ${maxDeposit.toFixed(2)}` },
       { status: 400 },
     );
 

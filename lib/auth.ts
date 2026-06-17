@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? "change-me");
+if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET environment variable is required");
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE = "copa_token";
 
 export interface JWTPayload {

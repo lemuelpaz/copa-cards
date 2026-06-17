@@ -11,7 +11,7 @@ async function main() {
   ];
 
   for (const p of packs) {
-    await prisma.pack.upsert({ where:{ id: p.id }, update: p, create: p });
+    await prisma.pack.upsert({ where:{ id: p.id }, update: {}, create: p });
   }
 
   // Default cards
